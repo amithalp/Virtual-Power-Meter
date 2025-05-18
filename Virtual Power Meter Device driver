@@ -1,0 +1,103 @@
+/**
+ *  Virtual Power Meter Device
+ *  Version: 1.1.0
+ *  Author: Amit Halperin
+ *  Date: 2025-05-17
+ *
+ *  Description:
+ *  A virtual device for displaying power usage with a dynamically generated HTML meter.
+ *  Supports configurable min/max range values and gradient color fill from cool (blue) to hot (red).
+ */
+
+metadata {
+    definition(name: "Virtual Power Meter Device", namespace: "amithalp", author: "Amit Halperin") {
+        capability "Sensor"
+        capability "PowerMeter"
+
+        attribute "powerMeter", "string"
+        attribute "charCount", "number"
+
+		command "testPower", ["number"]
+        command "setPower", ["number"]
+        command "setPowerMeter", ["number"]
+        command "setPowerAndMeter", ["number"]
+    }
+
+    preferences {
+        input("segmentCount", "number", title: "Number of Segments", defaultValue: 20)
+		input("powerMin", "number", title: "Minimum Power Value (W)", defaultValue: 0)
+        input("powerMax", "number", title: "Maximum Power Value (W)", defaultValue: 30000)
+        input("powerUnit", "enum", title: "Power Unit", options: ["W", "kW", "A"], defaultValue: "W")
+    }
+}
+
+def installed() {
+    initialize()
+}
+
+def updated() {
+    initialize()
+}
+
+def initialize() {
+    if (powerMin == null) powerMin = 0
+    if (powerMax == null) powerMax = 30000
+    if (powerUnit == null) powerUnit = "W"
+}
+
+/**
+ * Sets the power attribute.
+ */
+def setPower(value) {
+    sendEvent(name: "power", value: value.toBigDecimal(), unit: powerUnit ?: "W")
+}
+
+/**
+ * Generates and sets the powerMeter HTML bar based on the value and range.
+ */
+def setPowerMeter(power) {
+    def min = powerMin ?: 0
+    def max = powerMax ?: 30000
+    def unit = "kW"
+	def powerKW = power.toDouble() / 1000
+	def formattedPower = String.format("%.2f", powerKW).replaceAll(/(\d)(?=(\d{3})+\.)/, '$1,')
+ 	//def unit = powerUnit ?: "W"
+    def percent = Math.max(0.0, Math.min(((power.toDouble() - min) / (max - min)) * 100.0, 100.0)).toInteger()
+    def mainHue = (120 - (percent * 1.2)).toInteger()
+    def displayColor = "hsl(${mainHue},100%,45%)"
+    //def formattedPower = power.toBigDecimal().toInteger().toString().reverse().replaceAll(/(\d{3})(?=\d)/, '$1,').reverse()
+
+    def segments = (segmentCount != null) ? segmentCount.toInteger() : 20
+    def filledSegments = Math.round((percent / 100.0) * segments).toInteger()
+    def bar = ""
+
+    (1..segments).each { i ->
+    def rel = (i - 1) / (segments - 1)
+    def h = (rel <= 0.5) ? (120 - (rel * 2 * 90)) : (30 - ((rel - 0.5) * 2 * 30))
+    def c = (i <= filledSegments) ? "hsl(${h.toInteger()},100%,45%)" : "#222"
+    bar += "<div style='flex:1;margin:0 1px;height:56px;background:${c}'></div>"
+    }
+
+    def html = "<div style='font-family:sans-serif;font-size:0.9em'><div style='display:flex;justify-content:space-between;margin-bottom:4px'><b>Power</b><b style='color:${displayColor}'>${formattedPower}${unit}</b></div><div style='display:flex;height:60px;background:#111;padding:2px'>${bar}</div></div>"
+    def charCount = html.length()
+    sendEvent(name: "charCount", value: charCount)
+    sendEvent(name: "powerMeter", value: html)
+}
+
+/**
+ * Convenience method to set power and meter in one step.
+ */
+def setPowerAndMeter(value) {
+    setPower(value)
+    setPowerMeter(value)
+}
+
+/**
+ * Command for manually testing the meter from the device page.
+ * Sets both power and powerMeter in one step.
+ */
+def testPower(value) {
+    log.info "Test power value injected: ${value}"
+    setPowerAndMeter(value)
+}
+
