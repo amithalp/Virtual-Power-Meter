@@ -2,7 +2,7 @@
  *  Virtual Power Meter Device
  *  Version: 1.1.1
  *  Author: Amit Halperin
- *  Date: 2025-05-17
+ *  Date: 2025-05-20
  *
  *  Description:
  *  A virtual device for displaying power usage with a dynamically generated HTML meter.
