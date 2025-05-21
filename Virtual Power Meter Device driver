@@ -80,7 +80,7 @@ def setPowerMeter(power) {
         bar += "<div style='flex:1;margin:0 1px;height:56px;background:${c}'></div>"
     }
 
-    def html = "<div style='font-family:sans-serif;font-size:0.9em'><div style='display:flex;justify-content:space-between;margin-bottom:4px'><b>Power</b><b style='color:#000'>${formattedPower}${unit}</b></div><div style='display:flex;height:60px;background:#111;padding:2px'>${bar}</div></div>"
+    def html = "<div style='font-family:sans-serif;font-size:0.9em'><div style='display:flex;justify-content:space-between;margin-bottom:4px'><b>Power</b><b style='color:#000'>${formattedPower} ${unit}</b></div><div style='display:flex;height:60px;background:#111;padding:2px'>${bar}</div></div>"
     def charCount = html.length()
     sendEvent(name: "charCount", value: charCount)
     sendEvent(name: "powerMeter", value: html)
